@@ -1,0 +1,415 @@
+import networkx as nx
+import matplotlib.pyplot as plt
+from itertools import chain, product, starmap
+from functools import partial
+
+# --- Path and Cycle Functions ---
+
+def generate_all_paths(DG):
+    """Generates all simple paths from root nodes to leaf nodes in a directed graph."""
+    chaini = chain.from_iterable
+    roots = (v for v, d in DG.in_degree() if d == 0)
+    leaves = (v for v, d in DG.out_degree() if d == 0)
+    all_paths = partial(nx.all_simple_paths, DG)
+    return list(chaini(starmap(all_paths, product(roots, leaves))))
+
+def is_acyclic(graph):
+    """Checks if a directed graph is acyclic using topological sorting."""
+    in_degree = {v: 0 for v in graph}
+    for v in graph:
+        for u in graph[v]:
+            in_degree[u] += 1
+
+    queue = [v for v in graph if in_degree[v] == 0]
+    visited = []
+
+    while queue:
+        v = queue.pop()
+        visited.append(v)
+        for u in graph[v]:
+            in_degree[u] -= 1
+            if in_degree[u] == 0:
+                queue.append(u)
+
+    return len(visited) == len(graph)
+
+# --- Graph Generation and Orientation ---
+
+def generate_all_orientations(G):
+    """Generates all possible orientations of an undirected graph G."""
+    for edge_orientations in product((0, 1), repeat=G.number_of_edges()):
+        DG = G.to_directed()
+        for i, (u, v) in enumerate(G.edges()):
+            if edge_orientations[i] == 0:
+                DG.remove_edge(u, v)
+            else:
+                DG.remove_edge(v, u)
+        yield DG
+
+# --- Semi-Transitivity Checks ---
+
+def has_shortcut(G, path):
+    """Checks if a directed path violates the shortcut condition."""
+    for i in range(len(path) - 2):
+        for j in range(i + 2, len(path)):
+            if not G.has_edge(path[i], path[j]):
+                return True
+    return False
+
+def is_semi_transitive(G):
+    """Checks if a directed graph G is semi-transitive."""
+    if not is_acyclic(G):
+        return False
+
+    for path in generate_all_paths(G):
+        if len(path) >= 3 and has_shortcut(G, path):
+            return False
+    return True
+
+def is_k_n_semi_transitive(G, k, n):
+
+    """Checks if a directed graph G is k-n semi-transitive."""
+
+    if not is_acyclic(G):
+
+        return False
+
+
+
+    shortcut_count = 0
+
+    for path in generate_all_paths(G):
+
+        if len(path) > n and has_shortcut(G, path):
+
+            shortcut_count += 1
+
+            if shortcut_count > k:
+
+                return False
+
+    return True
+
+
+def generate_representative_word(DG):
+    V = list(DG.nodes())
+    n = len(V)
+    K = max(nx.find_cliques(DG.to_undirected()), key=len)
+
+    if len(K) == n:
+        return list(K) * 2
+
+    Word = []
+    for v in V:
+        if v not in K:
+            I = list(DG.predecessors(v))
+            O = list(DG.successors(v))
+            A = [u for u in V if nx.has_path(DG, u, v) and (u not in I) and u not in {v}]
+            B = [u for u in V if nx.has_path(DG, v, u) and (u not in O) and u not in {v}]
+            T = [u for u in V if u not in ({v} | set(I) | set(O) | set(A) | set(B))]
+
+            # Initialize an empty word for this vertex
+            vertex_word = []
+
+            # Iterate over subgraphs and extend the vertex_word
+            for subgraph in [A, I, T, A, [v], O, I, [v], B, T, O, B]:
+                vertex_word.extend(topological_sort(DG.subgraph(subgraph)))
+
+            # Append the vertex_word to the overall Word
+            Word.extend(vertex_word)
+
+    # Remove consecutive duplicates from the final Word
+    result = [x for i, x in enumerate(Word) if i == 0 or Word[i] != Word[i - 1]]
+    return result
+
+###
+
+def topological_sort(DG):
+
+    """Performs topological sorting on a directed acyclic graph."""
+    #print(" topological_sort:"+str(list(nx.topological_sort(DG))))
+    return list(nx.topological_sort(DG))
+
+def is_clique(graph, vertices):
+
+    """Checks if the given set of vertices forms a clique in the graph."""
+
+    for i in vertices:
+
+        for j in vertices:
+
+            if i != j and not graph.has_edge(i, j):
+
+                return False
+
+    return True
+
+
+
+def max_cliques(graph, vertices, i, l, store, max_clique_size):
+
+    """Recursively finds the size of the maximum clique in the graph."""
+
+    if i > len(vertices):
+
+        return max_clique_size
+
+
+
+    # Try including the current vertex
+
+    v = vertices[i-1]
+
+    store[l] = v
+
+    if is_clique(graph, store[:l+1]):
+
+        max_clique_size = max(max_clique_size, l + 1)
+
+        max_clique_size = max(max_clique_size,
+
+                             max_cliques(graph, vertices, i + 1, l + 1, store, max_clique_size))
+
+
+
+    # Try excluding the current vertex
+
+    max_clique_size = max(max_clique_size,
+
+                         max_cliques(graph, vertices, i + 1, l, store, max_clique_size))
+
+
+
+    return max_clique_size
+
+def is_alternating_edge(word, edge):
+
+    """
+
+    Checks if an edge (pair of letters) alternates in a given word.
+
+
+
+    Args:
+
+        word (str): The word to check.
+
+        edge (tuple): A tuple of two letters representing the edge.
+
+
+
+    Returns:
+
+        bool: True if the edge alternates in the word, False otherwise.
+
+    """
+
+    letter1, letter2 = edge
+
+    last_seen = None
+
+    for letter in word:
+
+        if letter in edge:  # Only consider letters in the edge
+
+            if last_seen == letter:
+
+                return False  # Consecutive repetition means no alternation
+
+            last_seen = letter
+
+    #print("alternating: "+str(edge))
+
+    return True  # If we reach here, all occurrences alternated
+
+
+
+def create_word_graph(word):
+
+    """
+
+    Creates a NetworkX graph representing the alternation of letters in a word.
+
+
+
+    Args:
+
+        word (str): The word to create the graph from.
+
+
+
+    Returns:
+
+        nx.Graph: The NetworkX graph representing the word.
+
+    """
+
+    G = nx.Graph()
+
+    letters = list(set(word))  # Get unique letters
+
+    G.add_nodes_from(letters)
+
+
+
+    for i in range(len(letters)):
+
+        for j in range(i+1, len(letters)):
+
+            edge = (letters[i], letters[j])
+
+            if is_alternating_edge(word, edge):
+
+                G.add_edge(*edge)  # Add the edge if it alternates
+
+    return G
+
+n=5
+
+# Example Usage (Modified)
+
+G = nx.wheel_graph(n)
+
+graph=G
+
+#vertices = list(graph.keys())  # Get all vertex labels
+
+vertices = list(G.nodes())  # Get all node labels
+
+store = [0] * (len(vertices) + 1)  # Store clique vertices
+
+max_clique_size = max_cliques(G, vertices, 1, 0, store, 0)
+
+print("Maximum clique size:", max_clique_size)
+
+from itertools import combinations
+
+
+
+# ... (Your existing functions: is_acyclic, generate_representative_word, create_word_graph)
+
+def is_connected(graph):
+    """Checks if a graph is connected using BFS."""
+    visited = set()
+    queue = deque([next(iter(graph))])  # Start from any node
+    while queue:
+        node = queue.popleft()
+        visited.add(node)
+        queue.extend(n for n in graph[node] if n not in visited)
+    return len(visited) == len(graph)
+
+def generate_connected_graphs(n, seen_words=None):
+    """Generates all connected graphs with n vertices (up to isomorphism)."""
+    if seen_words is None:
+        seen_words = set()
+    G = nx.Graph()
+    G.add_nodes_from(range(n))
+
+    def extend_graph(G):
+        for u, v in itertools.combinations(G.nodes(), 2):
+            if not G.has_edge(u, v):
+                G.add_edge(u, v)
+                if is_connected(G):
+                    rep_word = generate_representative_word(G.to_directed())
+                    if rep_word not in seen_words:
+                        seen_words.add(rep_word)
+                        yield G
+                        yield from extend_graph(G.copy())
+                G.remove_edge(u, v)
+
+    yield from extend_graph(G)
+
+
+# Example Usage:
+def generate_all_connected_graphs(n):
+    """Generates all connected graphs on n nodes."""
+    graphs = []
+    for num_edges in range(n - 1, n * (n - 1) // 2 + 1):
+        for edges in combinations(combinations(range(n), 2), num_edges):
+            G = nx.Graph()
+            G.add_nodes_from(range(n))
+            G.add_edges_from(edges)
+            if nx.is_connected(G):
+                graphs.append(G)
+    return graphs
+
+def remove_isomorphic_graphs(graphs):
+    """Removes isomorphic graphs from a list of graphs."""
+    unique_graphs = []
+    for G in graphs:
+        is_isomorphic = False
+        for H in unique_graphs:
+            if nx.is_isomorphic(G, H):
+                is_isomorphic = True
+                break
+        if not is_isomorphic:
+            unique_graphs.append(G)
+    return unique_graphs
+def do_dg_and_word_graph_correspond(DG, word_graph):
+    """
+    Checks if a directed graph (DG) and a word graph correspond, based on the
+    representative word generation rules.
+
+    Args:
+        DG (nx.DiGraph): The directed graph.
+        word_graph (nx.Graph): The word graph.
+
+    Returns:
+        bool: True if they correspond, False otherwise.
+    """
+
+    # 1. Generate the representative word from the directed graph.
+    rep_word = generate_representative_word(DG)
+
+    # 2. Check if the word graph is isomorphic to the graph created from the representative word.
+    expected_word_graph = create_word_graph(rep_word)
+    is_isomorphic = nx.is_isomorphic(word_graph, expected_word_graph)
+
+    # 3. If not isomorphic, they don't correspond.
+    if not is_isomorphic:
+        return False
+
+    # 4. (Optional) Further checks for stricter correspondence:
+    #    - Verify that the order of vertices in the representative word matches
+    #      some topological ordering of the directed graph.
+    #    - Add other checks based on specific properties you want to enforce.
+
+    return True  # If all checks pass, they correspond
+
+# Generate all connected graphs on 5 nodes
+all_graphs = generate_all_connected_graphs(6)
+
+# Remove isomorphic graphs
+unique_graphs = remove_isomorphic_graphs(all_graphs)
+
+# Print the number of unique graphs
+print(f"Number of unique connected graphs on 4 nodes: {len(unique_graphs)}")
+
+count=0
+temp=0
+for G in unique_graphs:
+  #nx.draw(G)
+  #plt.show()
+  for DG in generate_all_orientations(G):
+
+    if is_acyclic(DG):
+
+        for k in range(1):  # Iterate over possible k values
+
+            for n in range(1):  # Iterate over possible n values
+
+              if is_semi_transitive(DG):
+                rep_word = generate_representative_word(DG)
+                word_graph = create_word_graph(rep_word)
+
+                # Check for correspondence
+                if do_dg_and_word_graph_correspond(DG, word_graph):
+                    print("DG and word_graph correspond!")
+                    # ... (your visualization and further analysis)
+                    temp=temp+1
+                else:
+                    print("DG and word_graph do NOT correspond.")
+                    break
+                    # .
+                count=count+1
+print(str((temp/count)*100)+ " percent correct out of " +str(count))
