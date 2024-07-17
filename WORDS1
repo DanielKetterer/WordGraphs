@@ -1,8 +1,9 @@
 import networkx as nx
 import matplotlib.pyplot as plt
-from itertools import chain, product, starmap
+from itertools import chain, product, starmap 
 from functools import partial
-
+import itertools
+from collections import deque
 # --- Path and Cycle Functions ---
 
 def generate_all_paths(DG):
@@ -375,30 +376,28 @@ def do_dg_and_word_graph_correspond(DG, word_graph):
     #    - Add other checks based on specific properties you want to enforce.
 
     return True  # If all checks pass, they correspond
-
+n = 7
 # Generate all connected graphs on 5 nodes
-all_graphs = generate_all_connected_graphs(6)
+all_graphs = generate_all_connected_graphs(n)
 
 # Remove isomorphic graphs
 unique_graphs = remove_isomorphic_graphs(all_graphs)
 
 # Print the number of unique graphs
-print(f"Number of unique connected graphs on 4 nodes: {len(unique_graphs)}")
+print(f"Number of unique connected graphs on {n} nodes: {len(unique_graphs)}")
 
 count=0
 temp=0
+
 for G in unique_graphs:
+  flag = 0
   #nx.draw(G)
   #plt.show()
-  for DG in generate_all_orientations(G):
-
-    if is_acyclic(DG):
-
-        for k in range(1):  # Iterate over possible k values
-
-            for n in range(1):  # Iterate over possible n values
-
-              if is_semi_transitive(DG):
+  Digraphs = generate_all_orientations(G)
+  for DG in Digraphs:
+    if (flag == 1):
+        continue
+    if is_acyclic(DG) and is_semi_transitive(DG):
                 rep_word = generate_representative_word(DG)
                 word_graph = create_word_graph(rep_word)
 
@@ -406,10 +405,18 @@ for G in unique_graphs:
                 if do_dg_and_word_graph_correspond(DG, word_graph):
                     print("DG and word_graph correspond!")
                     # ... (your visualization and further analysis)
+                    # Digraphs = []
+                    flag = 1
                     temp=temp+1
+                    # break
                 else:
                     print("DG and word_graph do NOT correspond.")
-                    break
+                    assert(0==1)
+                    # break
                     # .
                 count=count+1
+                    
+    else:
+        nx.draw(DG)
+        plt.show()
 print(str((temp/count)*100)+ " percent correct out of " +str(count))
