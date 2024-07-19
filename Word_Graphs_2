@@ -156,66 +156,34 @@ def max_cliques(graph, vertices, i, l, store, max_clique_size):
                          max_cliques(graph, vertices, i + 1, l, store, max_clique_size))
     return max_clique_size
 def is_alternating_edge(word, edge):
-
     """
-
     Checks if an edge (pair of letters) alternates in a given word.
-
-
-
     Args:
-
         word (str): The word to check.
-
         edge (tuple): A tuple of two letters representing the edge.
-
-
-
     Returns:
 
         bool: True if the edge alternates in the word, False otherwise.
-
     """
-
     letter1, letter2 = edge
-
     last_seen = None
-
     for letter in word:
-
         if letter in edge:  # Only consider letters in the edge
-
             if last_seen == letter:
-
                 return False  # Consecutive repetition means no alternation
-
             last_seen = letter
-
     #print("alternating: "+str(edge))
-
     return True  # If we reach here, all occurrences alternated
-
-
 
 def create_word_graph(word):
     G = nx.Graph()
-
     letters = list(set(word))  # Get unique letters
-
     G.add_nodes_from(letters)
-
-
-
     for i in range(len(letters)):
-
         for j in range(i+1, len(letters)):
-
             edge = (letters[i], letters[j])
-
             if is_alternating_edge(word, edge):
-
                 G.add_edge(*edge)  # Add the edge if it alternates
-
     return G
 
 def is_connected(graph):
@@ -438,15 +406,12 @@ def permutational_2_11_representation(G, n=None):
     # print(f"Final w: {w}")  # Print final w
     return " ".join(w)
 
-
 counter = 0
 for G in not_0_11_representable:
     representation = permutational_2_11_representation(G).replace(" ", "")
     print("2-11 Representation:")
     print(representation)
-          
-          
-    
+
     word_graph = create_2_11_word_graph(representation)
     
     plt.figure(figsize=(10, 5))
