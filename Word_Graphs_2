@@ -3,7 +3,7 @@ Daniel Ketterer
 @ daniel.kette@gmail.com 
 7/19/2024
 """
-
+n = 6 # VERY IMPORTANT! #  number of nodes in Graph
 import networkx as nx
 import matplotlib.pyplot as plt
 from itertools import chain, product, starmap 
@@ -268,7 +268,7 @@ def do_dg_and_word_graph_correspond(DG, word_graph):
         return False
 
     return True  # If all checks pass, they correspond
-n = 6
+
 # Generate all connected graphs on 6nodes
 all_graphs = generate_all_connected_graphs(n)
 
