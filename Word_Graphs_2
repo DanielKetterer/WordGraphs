@@ -420,7 +420,7 @@ for G in not_0_11_representable:
     plt.figure(figsize=(10, 5))
     
     plt.subplot(121)
-    plt.title("Original Wheel Graph (G)")
+    plt.title("Original Graph (G)")
     nx.draw(G, with_labels=True)
     
     plt.subplot(122)
