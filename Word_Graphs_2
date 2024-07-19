@@ -301,11 +301,14 @@ for G in unique_graphs:
 
                 # Check for correspondence
                 if do_dg_and_word_graph_correspond(DG, word_graph):
-                    print("DG and word_graph correspond!")
+                    # print("DG and word_graph correspond!")
                     # ... (your visualization and further analysis)
+                    
                     # Digraphs = []
                     flag = 1
                     temp=temp+1
+                    
+                    print(temp, "/",len(unique_graphs))
                     # break
                 else:
                     print("ERROR: DG and word_graph do NOT correspond.")
@@ -319,7 +322,7 @@ for G in unique_graphs:
         print("Not 0-11 representable")
         not_0_11_representable.append(G)
         
-print(str((temp/count)*100)+ " percent correct out of " + str(count))
+print(str((temp/count)*100) + " percent correspondence out of " + str(count) + " graphs")
 print("and ", len(not_0_11_representable)," many graphs are not 0-11 representable on ",n, " vertices")
 
 
