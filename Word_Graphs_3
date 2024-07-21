@@ -505,7 +505,7 @@ def permutational_2_11_representation(G, n=None):
 
     # Base case: Graphs with 2 vertices
     if n == 2:
-        return "01 10 01 01" if G.has_edge(1, 2) else "01 10 01 10"
+        return "01 10 01 01" if G.has_edge(0,1) else "01 10 01 10"
 
     # Recursive step
     subgraph = G.subgraph(range(n - 1))
